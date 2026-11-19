@@ -1,0 +1,4 @@
+# Ambiente separado para o RF-DETR (LibreYOLO), para não mexer no ambiente do MediaPipe.
+# Inclui PyTorch. Para usar placa de vídeo NVIDIA, instale antes o PyTorch com CUDA
+# pelo comando indicado em https://pytorch.org/get-started/locally/
+libreyolo[rfdetr]

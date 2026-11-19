@@ -1,0 +1,21 @@
+# Ambiente virtual (o setup.bat recria)
+.venv/
+venv/
+
+# Cache do Python
+__pycache__/
+*.py[cod]
+
+# Modelos e pesos: baixados automaticamente na primeira execução
+models/
+weights/
+*.pt
+*.task
+*.download.lock
+
+# Sistema e editor
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
