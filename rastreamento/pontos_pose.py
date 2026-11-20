@@ -15,7 +15,7 @@ from enum import IntEnum
 
 
 class PontoCOCO(IntEnum):
-    """Os 17 pontos do YOLO26-pose (veja mapa_pontos_yolo26.png)."""
+    """Os 17 pontos do YOLO26-pose (veja docs/mapa_pontos_yolo26.png)."""
     NARIZ = 0
     OLHO_ESQUERDO = 1
     OLHO_DIREITO = 2

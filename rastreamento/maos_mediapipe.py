@@ -20,16 +20,16 @@ import cv2
 from mediapipe.tasks import python as mp_tasks
 from mediapipe.tasks.python import vision
 
-from envio_unity import preencher_mao
-from filtros_pose import FiltroPontos
-from pontos_pose import N_PONTOS_MAO
+from .envio_unity import preencher_mao
+from .filtros_pose import FiltroPontos
+from .pontos_pose import N_PONTOS_MAO
 
 
 # =============================================================================
 # MODELO
 # =============================================================================
 
-PASTA_MODELOS = Path(__file__).resolve().parent / "models"
+PASTA_MODELOS = Path(__file__).resolve().parent.parent / "models"   # python/models
 SITE_MODELOS = "https://storage.googleapis.com/mediapipe-models"
 ENDERECO_MODELO_MAOS = f"{SITE_MODELOS}/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task"
 

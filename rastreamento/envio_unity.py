@@ -32,7 +32,7 @@ import socket
 
 import numpy as np
 
-from pontos_pose import COCO_PARA_MEDIAPIPE, N_PONTOS_MEDIAPIPE, PontoCOCO
+from .pontos_pose import COCO_PARA_MEDIAPIPE, N_PONTOS_MEDIAPIPE, PontoCOCO
 
 
 # =============================================================================

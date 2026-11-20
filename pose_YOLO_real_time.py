@@ -29,10 +29,10 @@ import numpy as np                        # contas com os pontos
 import torch                              # só para saber se a placa de vídeo está disponível
 from ultralytics import YOLO              # os modelos YOLO do Ultralytics
 
-from envio_unity import ConversorCOCO, EnviadorUnity, nova_mensagem   # formato e envio (igual ao MediaPipe)
-from filtros_pose import FiltroPontos, pre_processar                  # filtros compartilhados com o MediaPipe
-from maos_mediapipe import RastreadorMaos, criar_detector_maos, desenhar_maos   # mãos do MediaPipe
-from pontos_pose import N_PONTOS_COCO, PontoCOCO
+from rastreamento.envio_unity import ConversorCOCO, EnviadorUnity, nova_mensagem   # formato e envio (igual ao MediaPipe)
+from rastreamento.filtros_pose import FiltroPontos, pre_processar                  # filtros compartilhados com o MediaPipe
+from rastreamento.maos_mediapipe import RastreadorMaos, criar_detector_maos, desenhar_maos   # mãos do MediaPipe
+from rastreamento.pontos_pose import N_PONTOS_COCO, PontoCOCO
 
 
 # =============================================================================
@@ -41,7 +41,7 @@ from pontos_pose import N_PONTOS_COCO, PontoCOCO
 
 CAMERA = 0                # 0 = webcam do notebook
 ESPELHAR = False          # True = imagem como num espelho
-MODELO = 'yolo26n-pose.pt'  # o sufixo -pose é o modelo de pontos do corpo
+MODELO = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models', 'yolo26n-pose.pt')  # o sufixo -pose é o modelo de pontos do corpo
 
 # Mãos: o YOLO não tem dedos, então o MediaPipe Hand Landmarker roda junto (em paralelo)
 USAR_MAOS = True          # True = detecta os dedos das duas mãos

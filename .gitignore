@@ -19,3 +19,7 @@ weights/
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Gravações de tela (pesadas, ficam só na máquina)
+docs/gravacoes/
+*.mp4

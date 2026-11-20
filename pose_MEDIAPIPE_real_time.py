@@ -28,9 +28,9 @@ import mediapipe as mp
 from mediapipe.tasks import python as mp_tasks
 from mediapipe.tasks.python import vision
 
-from envio_unity import EnviadorUnity, nova_mensagem, preencher_corpo
-from filtros_pose import FiltroPontos, pre_processar
-from maos_mediapipe import (SITE_MODELOS, RastreadorMaos, baixar_modelo as baixar_arquivo_modelo,
+from rastreamento.envio_unity import EnviadorUnity, nova_mensagem, preencher_corpo
+from rastreamento.filtros_pose import FiltroPontos, pre_processar
+from rastreamento.maos_mediapipe import (SITE_MODELOS, RastreadorMaos, baixar_modelo as baixar_arquivo_modelo,
                             criar_detector_maos, desenhar_maos)
 
 

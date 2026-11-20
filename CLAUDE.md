@@ -8,10 +8,15 @@ O sistema vai se concentrar no script: "pose_YOLO_real_time.py"
 
 - `pose_YOLO_real_time.py`: YOLO26-pose (17 pontos COCO, 2D) + mãos do MediaPipe (em paralelo) -> Unity
 - `pose_MEDIAPIPE_real_time.py`: MediaPipe (33 pontos 3D + mãos + rosto) -> Unity
-- `envio_unity.py`: formato JSON único e envio UDP usados pelos DOIS scripts (YOLO convertido para os 33 pontos + pseudo-3D com z = 0)
-- `pontos_pose.py`: enums dos pontos (PontoCOCO, PontoMediaPipe, PontoMao) e a conversão COCO -> MediaPipe
-- `maos_mediapipe.py`: mãos (detector, associação mão <-> pulso, filtro, desenho), usado pelos DOIS scripts
-- `filtros_pose.py`: pré-processamento de pouca luz (CLAHE), filtro por confiança e One Euro
+- `rastreamento/` (pacote compartilhado pelos DOIS scripts; dentro dele os imports são relativos):
+  - `envio_unity.py`: formato JSON único e envio UDP (YOLO convertido para os 33 pontos + pseudo-3D com z = 0)
+  - `pontos_pose.py`: enums dos pontos (PontoCOCO, PontoMediaPipe, PontoMao) e a conversão COCO -> MediaPipe
+  - `maos_mediapipe.py`: mãos (detector, associação mão <-> pulso, filtro, desenho)
+  - `filtros_pose.py`: pré-processamento de pouca luz (CLAHE), filtro por confiança e One Euro
+- `ferramentas/udp_test_receiver.py`: receptor UDP de teste (sem o Unity)
+- `models/`: todos os modelos (MediaPipe `.task` + `yolo26n-pose.pt`), fora do git, baixados na primeira execução
+- `docs/`: mapa dos pontos, descrições de PRs (`docs/PRs/`) e gravações de tela (`docs/gravacoes/`, fora do git)
+- `setup.bat` (cria o .venv) e `run_sender.bat` (roda MediaPipe, ou YOLO com `run_sender.bat yolo`)
 - Projeto Unity oficial: `../UnityBodyTracking` (repositório git separado). Receptor: `PoseUdpReceiver.cs`
 - A suavização fica no Unity (`HumanoidAvatarDriver.cs`); nos scripts Python, `SUAVIZAR = False`
 
