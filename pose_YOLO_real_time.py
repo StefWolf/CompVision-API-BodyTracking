@@ -40,7 +40,7 @@ from pontos_pose import N_PONTOS_COCO, PontoCOCO
 # =============================================================================
 
 CAMERA = 0                # 0 = webcam do notebook
-ESPELHAR = True           # True = imagem como num espelho
+ESPELHAR = False          # True = imagem como num espelho
 MODELO = 'yolo26n-pose.pt'  # o sufixo -pose é o modelo de pontos do corpo
 
 # Mãos: o YOLO não tem dedos, então o MediaPipe Hand Landmarker roda junto (em paralelo)
