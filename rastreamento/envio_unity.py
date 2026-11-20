@@ -29,6 +29,8 @@ estimada pelo encurtamento dos ossos na imagem; o resto fica com z = 0. Veja Con
 
 import json
 import socket
+import threading
+import time
 
 import numpy as np
 
@@ -219,38 +221,177 @@ class ConversorCOCO:
 # ENVIO UDP
 # =============================================================================
 
+# Descoberta na rede local (o Unity pode estar no Meta Quest, em outro aparelho da rede):
+#
+#   PC  -> broadcast, a cada 1 s, na porta do Unity (5052): {"type":"pc_announce", ...}  "sou o PC das poses"
+#   Unity -> PC na porta 5053 (direto e por broadcast):     {"type":"hello", "port", "id"} "estou aqui"
+#   PC  -> poses DIRETO para o IP de cada Unity que disse "estou aqui" nos últimos 3 s
+#
+# As poses não vão por broadcast: no Wi-Fi o broadcast sai na velocidade mais baixa e sem reenvio.
+# No firewall do PC, libere a ENTRADA de UDP na PORTA_DESCOBERTA (5053).
+
+APP = "pose-tracking"         # assinatura das mensagens de descoberta (o Unity confere)
+PORTA_DESCOBERTA = 5053       # o Python escuta aqui o "estou aqui" do Unity
+INTERVALO_AVISO = 1.0         # segundos entre os avisos "sou o PC das poses"
+TEMPO_ESQUECER = 3.0          # sem "estou aqui" por esse tempo, o Unity é esquecido
+
+
+def _enderecos_de_broadcast():
+    """255.255.255.255 + o broadcast de cada rede deste PC (supondo máscara /24, a mais comum em casa)."""
+    ips = set()
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            ips.add(info[4][0])
+    except OSError:
+        pass
+    try:   # IP da rede principal (não envia nada: só pergunta ao sistema por qual rede sairia)
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            ips.add(s.getsockname()[0])
+    except OSError:
+        pass
+    redes = {ip.rsplit(".", 1)[0] + ".255" for ip in ips if not ip.startswith("127.")}
+    return ["255.255.255.255"] + sorted(redes)
+
+
 class EnviadorUnity:
-    """Envia as mensagens para o Unity por UDP. Use com 'with' ou chame fechar() no fim."""
+    """
+    Envia as mensagens para o Unity por UDP. Use com 'with' ou chame fechar() no fim.
+
+    descoberta=False: envia sempre para ip:porta (ex.: 127.0.0.1 = Unity neste PC).
+    descoberta=True : anuncia o PC na rede e envia para cada Unity que responder (Editor ou Meta Quest).
+    """
     LIMITE_UDP = 65507        # maior pacote UDP possível
     LIMITE_SEGURO = 8192      # acima disso, fora deste computador, pacotes se perdem com mais frequência
 
-    def __init__(self, ip="127.0.0.1", porta=5052):
+    def __init__(self, ip="127.0.0.1", porta=5052, descoberta=False, porta_descoberta=PORTA_DESCOBERTA):
         self.destino = (ip, porta)
+        self.porta_unity = porta
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self._ja_avisou = False
+
+        self.descoberta = False
+        self._clientes = {}            # id do Unity -> {"destino": (ip, porta), "visto": horário}
+        self._trava = threading.Lock()
+        self._rodando = False
+        if descoberta:
+            self._iniciar_descoberta(porta_descoberta)
+
+    # ------------------------------------------------------------------ descoberta
+
+    def _iniciar_descoberta(self, porta_descoberta):
+        self._escuta = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        if hasattr(socket, "SIO_UDP_CONNRESET"):
+            # Windows: um envio para porta sem ninguém escutando faria o próximo recvfrom dar erro
+            self._escuta.ioctl(socket.SIO_UDP_CONNRESET, False)
+        try:
+            self._escuta.bind(("0.0.0.0", porta_descoberta))
+        except OSError as erro:
+            self._escuta.close()
+            print(f"[envio] Não consegui escutar a porta {porta_descoberta} ({erro}). Outro script já está "
+                  f"rodando? Sem a descoberta, enviando só para {self.destino[0]}:{self.destino[1]}.")
+            return
+        self._escuta.settimeout(0.2)
+        self._aviso = json.dumps({"type": "pc_announce", "app": APP, "port": porta_descoberta},
+                                 separators=(",", ":")).encode("utf-8")
+        self._broadcasts = _enderecos_de_broadcast()
+        self.descoberta = True
+        self._rodando = True
+        self._thread = threading.Thread(target=self._laco_descoberta, name="descoberta-unity", daemon=True)
+        self._thread.start()
+        print(f"[envio] Descoberta ligada: anunciando o PC em {', '.join(self._broadcasts)} "
+              f"(porta {self.porta_unity}) e esperando o Unity na porta {porta_descoberta}.")
+
+    def _laco_descoberta(self):
+        proximo_aviso = 0.0
+        while self._rodando:
+            agora = time.time()
+            if agora >= proximo_aviso:
+                proximo_aviso = agora + INTERVALO_AVISO
+                for endereco in self._broadcasts:
+                    try:
+                        self.socket.sendto(self._aviso, (endereco, self.porta_unity))
+                    except OSError:
+                        pass   # essa rede pode não existir mais (ex.: Wi-Fi desligado)
+                self._esquecer_antigos(agora)
+
+            try:
+                dados, (ip, _) = self._escuta.recvfrom(4096)
+            except (socket.timeout, ConnectionResetError):
+                continue
+            except OSError:
+                break      # socket fechado ao sair
+            try:
+                msg = json.loads(dados.decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                continue
+            if msg.get("type") != "hello" or msg.get("app") != APP:
+                continue
+            self._registrar(str(msg.get("id") or ip), (ip, int(msg.get("port") or self.porta_unity)),
+                            msg.get("device", "?"))
+
+    def _registrar(self, id_cliente, destino, aparelho):
+        with self._trava:
+            novo = id_cliente not in self._clientes
+            self._clientes[id_cliente] = {"destino": destino, "visto": time.time(), "aparelho": aparelho}
+        if novo:
+            print(f"[envio] Unity conectado: {aparelho} em {destino[0]}:{destino[1]}")
+
+    def _esquecer_antigos(self, agora):
+        with self._trava:
+            antigos = [k for k, c in self._clientes.items() if agora - c["visto"] > TEMPO_ESQUECER]
+            removidos = [self._clientes.pop(k) for k in antigos]
+        for c in removidos:
+            print(f"[envio] Unity desconectado: {c['aparelho']} em {c['destino'][0]}")
+
+    def destinos(self):
+        """Para onde as poses estão indo agora."""
+        if not self.descoberta:
+            return [self.destino]
+        with self._trava:
+            return [c["destino"] for c in self._clientes.values()]
+
+    # ------------------------------------------------------------------ envio
 
     def enviar(self, msg):
         """Envia a mensagem. Devolve quantos bytes foram enviados (0 se não enviou)."""
+        destinos = self.destinos()
+        if not destinos:
+            return 0     # descoberta ligada e nenhum Unity conectado ainda
         dados = json.dumps(msg, separators=(",", ":"), allow_nan=False).encode("utf-8")
 
         if len(dados) > self.LIMITE_UDP:
             print(f"[envio] Mensagem de {len(dados)} bytes é grande demais para UDP: não enviada. "
                   f"Desligue ENVIAR_PONTOS_DO_ROSTO.")
             return 0
-        if len(dados) > self.LIMITE_SEGURO and self.destino[0] not in ("127.0.0.1", "localhost") \
-                and not self._ja_avisou:
+        fora_do_pc = any(ip not in ("127.0.0.1", "localhost") for ip, _ in destinos)
+        if len(dados) > self.LIMITE_SEGURO and fora_do_pc and not self._ja_avisou:
             print(f"[envio] Aviso: mensagens de {len(dados)} bytes podem se perder na rede. "
                   f"Considere desligar ENVIAR_PONTOS_DO_ROSTO.")
             self._ja_avisou = True
 
-        try:
-            self.socket.sendto(dados, self.destino)
-        except OSError as erro:   # rede fora do ar, por exemplo: não derruba o programa
-            print(f"[envio] Falha ao enviar: {erro}")
-            return 0
-        return len(dados)
+        enviados = 0
+        for destino in destinos:
+            try:
+                self.socket.sendto(dados, destino)
+                enviados = len(dados)
+            except OSError as erro:   # rede fora do ar, por exemplo: não derruba o programa
+                print(f"[envio] Falha ao enviar para {destino[0]}: {erro}")
+        return enviados
+
+    def descricao(self):
+        """Texto para o terminal: para onde as poses vão."""
+        if self.descoberta:
+            return (f"descoberta automática (o Unity se conecta sozinho; "
+                    f"libere a entrada UDP {PORTA_DESCOBERTA} no firewall)")
+        return f"{self.destino[0]}:{self.destino[1]}"
 
     def fechar(self):
+        self._rodando = False
+        if self.descoberta:
+            self._escuta.close()
+            self._thread.join(timeout=1.0)
         self.socket.close()
 
     def __enter__(self):

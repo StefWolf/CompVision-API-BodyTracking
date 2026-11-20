@@ -60,7 +60,8 @@ MIN_CUTOFF = 0.5          # menor = suaviza mais quando parado (mas cria mais at
 BETA = 0.05               # maior = reage mais rápido em movimentos rápidos (mas treme mais)
 
 ENVIAR_PARA_UNITY = True  # False = só mostra a janela, sem enviar nada
-IP_DO_UNITY = '127.0.0.1' # 127.0.0.1 = este mesmo computador
+DESCOBERTA_AUTOMATICA = True  # True = acha o Unity na rede sozinho (Editor neste PC ou o app no Meta Quest)
+IP_DO_UNITY = '127.0.0.1' # usado só com DESCOBERTA_AUTOMATICA = False (127.0.0.1 = este mesmo computador)
 PORTA_UDP = 5052          # a mesma configurada no PoseUdpReceiver do Unity
 
 
@@ -149,9 +150,9 @@ video = cv2.VideoCapture(CAMERA, cv2.CAP_DSHOW if os.name == 'nt' else cv2.CAP_A
 if not video.isOpened():
     raise RuntimeError('Não consegui abrir a webcam')
 
-envio = EnviadorUnity(IP_DO_UNITY, PORTA_UDP) if ENVIAR_PARA_UNITY else None
+envio = EnviadorUnity(IP_DO_UNITY, PORTA_UDP, descoberta=DESCOBERTA_AUTOMATICA) if ENVIAR_PARA_UNITY else None
 
-print('Rodando!' + (f' Enviando para o Unity em {IP_DO_UNITY}:{PORTA_UDP}.' if envio else '')
+print('Rodando!' + (f' Enviando para o Unity: {envio.descricao()}.' if envio else '')
       + ' Aperte Q ou ESC na janela para sair.')
 
 

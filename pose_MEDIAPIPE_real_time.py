@@ -76,7 +76,8 @@ LARGURA, ALTURA = 640, 480
 ESPELHAR = True          # True = imagem como num espelho
 MOSTRAR_JANELA = True    # False = não abre a janela
 
-IP_DO_UNITY = "127.0.0.1"  # 127.0.0.1 = este mesmo computador
+DESCOBERTA_AUTOMATICA = True  # True = acha o Unity na rede sozinho (Editor neste PC ou o app no Meta Quest)
+IP_DO_UNITY = "127.0.0.1"  # usado só com DESCOBERTA_AUTOMATICA = False (127.0.0.1 = este mesmo computador)
 PORTA_UDP = 5052           # a mesma configurada no PoseUdpReceiver do Unity
 
 
@@ -284,13 +285,13 @@ def abrir_camera():
 def main():
     detectores = criar_detectores()
     camera = abrir_camera()
-    envio = EnviadorUnity(IP_DO_UNITY, PORTA_UDP)
+    envio = EnviadorUnity(IP_DO_UNITY, PORTA_UDP, descoberta=DESCOBERTA_AUTOMATICA)
 
     # "Ajudantes" que rodam corpo, mãos e rosto ao mesmo tempo, um em cada núcleo do processador
     ajudantes = ThreadPoolExecutor(len(detectores)) if RODAR_EM_PARALELO and len(detectores) > 1 else None
 
     print(f"Detectando: {', '.join(detectores)}. "
-          f"Enviando para o Unity em {IP_DO_UNITY}:{PORTA_UDP}. Aperte Q ou ESC na janela para sair.")
+          f"Enviando para o Unity: {envio.descricao()}. Aperte Q ou ESC na janela para sair.")
 
     numero_frame, ultimo_tempo_ms = 0, -1
     ms_medio = {nome: 0.0 for nome in detectores}
