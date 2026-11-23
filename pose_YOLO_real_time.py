@@ -171,6 +171,9 @@ try:
         ok, quadro = video.read()             # lê o quadro mais novo
         if not ok:
             continue                          # às vezes a câmera falha um quadro: tenta o próximo
+        # Horário da captura: vai no "t" da mensagem. O One Euro do Unity usa a diferença entre
+        # dois "t" como dt, então ele tem que ser pego aqui, antes da inferência (que varia de tempo).
+        tempo_captura = time.time()
         if ESPELHAR:
             quadro = cv2.flip(quadro, 1)
 
@@ -181,7 +184,7 @@ try:
         if ajudante:
             imagem_mp = mp.Image(image_format=mp.ImageFormat.SRGB,
                                  data=cv2.cvtColor(quadro, cv2.COLOR_BGR2RGB))
-            tempo_ms = max(int(time.time() * 1000), ultimo_tempo_ms + 1)
+            tempo_ms = max(int(tempo_captura * 1000), ultimo_tempo_ms + 1)
             ultimo_tempo_ms = tempo_ms
             tarefa_maos = ajudante.submit(detectar_maos, imagem_mp, tempo_ms)
 
@@ -195,7 +198,7 @@ try:
             maos, ms_maos = tarefa_maos.result()   # espera as mãos terminarem (se ainda não terminaram)
 
         # --- Keypoints filtrados pela confiança (é isso que vai para o Unity) ---
-        agora = time.time()
+        agora = tempo_captura
         xy, conf = pessoa_principal(resultado)
         pontos, conf, validos = filtro_keypoints.atualizar(xy, conf, agora)
 

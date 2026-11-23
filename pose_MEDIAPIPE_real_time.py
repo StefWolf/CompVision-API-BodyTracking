@@ -166,9 +166,13 @@ RASTREADOR_MAOS = RastreadorMaos(tolerancia=QUADROS_TOLERANCIA, suavizar=SUAVIZA
                                  min_cutoff=MIN_CUTOFF, beta=BETA, conf_min=VISIBILIDADE_MINIMA)
 
 
-def montar_mensagem(numero_frame, largura, altura, corpo, maos, rosto):
-    """Junta os resultados do MediaPipe numa mensagem (dicionário) para o Unity."""
-    agora = time.time()
+def montar_mensagem(numero_frame, tempo_captura, largura, altura, corpo, maos, rosto):
+    """
+    Junta os resultados do MediaPipe numa mensagem (dicionário) para o Unity.
+    tempo_captura: time.time() logo depois de ler o quadro da câmera. Vai no "t" da mensagem
+    (o One Euro do Unity usa a diferença entre dois "t" como dt).
+    """
+    agora = tempo_captura
     msg = nova_mensagem(numero_frame, agora, largura, altura, fonte="mediapipe")
 
     # --- Corpo ---
@@ -305,6 +309,8 @@ def main():
                 if VIDEO:
                     break      # o vídeo acabou
                 continue
+            # Horário da captura: pego aqui, antes da detecção (que varia de tempo). Veja montar_mensagem.
+            tempo_captura = time.time()
             if ESPELHAR:
                 imagem = cv2.flip(imagem, 1)
 
@@ -314,7 +320,7 @@ def main():
             # O MediaPipe quer a imagem em RGB (o OpenCV entrega em BGR) e um tempo sempre crescente
             imagem_mp = mp.Image(image_format=mp.ImageFormat.SRGB,
                                  data=cv2.cvtColor(imagem, cv2.COLOR_BGR2RGB))
-            tempo_ms = max(int(time.time() * 1000), ultimo_tempo_ms + 1)
+            tempo_ms = max(int(tempo_captura * 1000), ultimo_tempo_ms + 1)
             ultimo_tempo_ms = tempo_ms
 
             # --- 2. Detecção (todos juntos, ou um depois do outro) ---
@@ -335,7 +341,7 @@ def main():
 
             # --- 3. Enviar para o Unity ---
             altura, largura = imagem.shape[:2]
-            msg = montar_mensagem(numero_frame, largura, altura, corpo, maos, rosto)
+            msg = montar_mensagem(numero_frame, tempo_captura, largura, altura, corpo, maos, rosto)
             envio.enviar(msg)
             numero_frame += 1
 
