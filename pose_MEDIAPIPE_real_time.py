@@ -73,7 +73,7 @@ BETA = 0.05               # maior = reage mais rápido em movimentos rápidos (m
 CAMERA = 0               # 0 = webcam do notebook; 1, 2... = outras câmeras
 VIDEO = None             # caminho de um vídeo para testar no lugar da câmera (ex.: "teste.mp4")
 LARGURA, ALTURA = 640, 480
-ESPELHAR = True          # True = imagem como num espelho
+ESPELHAR = False         # True = imagem como num espelho (em VR deixe False: sua mão direita move a direita do avatar)
 MOSTRAR_JANELA = True    # False = não abre a janela
 
 DESCOBERTA_AUTOMATICA = True  # True = acha o Unity na rede sozinho (Editor neste PC ou o app no Meta Quest)
