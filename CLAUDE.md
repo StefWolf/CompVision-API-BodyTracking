@@ -9,7 +9,7 @@ O sistema vai se concentrar no script: "pose_YOLO_real_time.py"
 - `pose_YOLO_real_time.py`: YOLO26-pose (17 pontos COCO, 2D) + mãos do MediaPipe (em paralelo) -> Unity
 - `pose_MEDIAPIPE_real_time.py`: MediaPipe (33 pontos 3D + mãos + rosto) -> Unity
 - `rastreamento/` (pacote compartilhado pelos DOIS scripts; dentro dele os imports são relativos):
-  - `envio_unity.py`: formato JSON único e envio UDP (YOLO convertido para os 33 pontos + pseudo-3D com z = 0)
+  - `envio_unity.py`: formato JSON único e envio UDP (YOLO convertido para os 33 pontos + pseudo-3D: metros pela largura dos ombros e z estimado pelo encurtamento dos ossos)
   - `pontos_pose.py`: enums dos pontos (PontoCOCO, PontoMediaPipe, PontoMao) e a conversão COCO -> MediaPipe
   - `maos_mediapipe.py`: mãos (detector, associação mão <-> pulso, filtro, desenho)
   - `filtros_pose.py`: pré-processamento de pouca luz (CLAHE), filtro por confiança e One Euro
