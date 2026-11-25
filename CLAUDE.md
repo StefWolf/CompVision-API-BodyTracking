@@ -15,7 +15,7 @@ O sistema vai se concentrar no script: "pose_YOLO_real_time.py"
   - `filtros_pose.py`: pré-processamento de pouca luz (CLAHE), filtro por confiança e One Euro
 - `ferramentas/udp_test_receiver.py`: receptor UDP de teste (sem o Unity)
 - `models/`: todos os modelos (MediaPipe `.task` + `yolo26n-pose.pt`), fora do git, baixados na primeira execução
-- `docs/`: mapa dos pontos, descrições de PRs (`docs/PRs/`) e gravações de tela (`docs/gravacoes/`, fora do git)
+- `docs/`: imagens (`docs/Images/`: mapa dos pontos e prints de medições), guia de ajuste do One Euro (`ajuste_one_euro.md`), descrições de PRs (`docs/PRs/`) e gravações de tela (`docs/gravacoes/`, fora do git)
 - `setup.bat` (cria o .venv) e `run_sender.bat` (roda MediaPipe, ou YOLO com `run_sender.bat yolo`)
 - Projeto Unity oficial: `../UnityBodyTracking` (repositório git separado). Receptor: `PoseUdpReceiver.cs`
 - A suavização fica no Unity (`HumanoidAvatarDriver.cs`); nos scripts Python, `SUAVIZAR = False`
